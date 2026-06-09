@@ -1,238 +1,292 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes"/>
 <title>New Games</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;outline:none}
-:focus-visible{outline:none}
-:root{
-  --bg:#0a0a0f;--surface:#111118;--surface2:#18181f;--surface3:#202028;
-  --purple:#7c3aed;--purple-mid:#6d28d9;--purple-soft:#4c1d95;
-  --purple-glow:rgba(124,58,237,0.18);--purple-border:rgba(124,58,237,0.35);
-  --text:#f0eeff;--text-muted:#8b87a8;--text-dim:#504d6a;
-  --danger:#ef4444;--success:#22c55e;
-  --radius:12px;--radius-sm:8px;--transition:0.2s cubic-bezier(.4,0,.2,1);
-  --sidebar-w:240px
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*:focus{outline:none}
+body{margin:0;font-family:'Roboto',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+.dark{
+  --bg:#0a0511;--surface:#12092a;--surface2:#1a1035;--surface3:#231845;
+  --purple:#c882ff;--purple-mid:#a855f7;--purple-dim:#6d28d9;
+  --purple-glow:rgba(168,85,247,0.15);--border:rgba(124,58,237,0.28);
+  --border-soft:rgba(255,255,255,0.06);--text:#eee1ff;--text-muted:#a890c8;
+  --text-dim:#5a4880;--card:#1a1035;--header-bg:rgba(10,5,17,0.88);
+  --danger:#f87171;--success:#4ade80
 }
-html,body{height:100%;overflow:hidden}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5}
-::-webkit-scrollbar{width:4px;height:4px}
+.light{
+  --bg:#f5f0ff;--surface:#fff;--surface2:#ede6ff;--surface3:#e0d6ff;
+  --purple:#7c3aed;--purple-mid:#6d28d9;--purple-dim:#5b21b6;
+  --purple-glow:rgba(124,58,237,0.1);--border:rgba(124,58,237,0.22);
+  --border-soft:rgba(0,0,0,0.07);--text:#1a0a2e;--text-muted:#5a4080;
+  --text-dim:#9880b8;--card:#fff;--header-bg:rgba(245,240,255,0.92);
+  --danger:#ef4444;--success:#22c55e
+}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--purple-dim);border-radius:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--purple-soft);border-radius:4px}
 
-/* LAYOUT */
-#app{display:flex;height:100vh;overflow:hidden;position:relative}
+#stars-canvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity 0.8s}
+.dark #stars-canvas{opacity:1}
 
-/* SIDEBAR */
-#sidebar{
-  position:fixed;top:0;left:0;height:100%;width:var(--sidebar-w);
-  background:var(--surface);border-right:1px solid var(--purple-border);
-  transform:translateX(-100%);transition:transform var(--transition);
-  z-index:200;display:flex;flex-direction:column;
-  box-shadow:4px 0 32px rgba(0,0,0,0.5)
+#app{display:flex;flex-direction:column;height:100vh;position:relative;z-index:1}
+
+header{
+  position:sticky;top:0;z-index:200;height:58px;
+  background:var(--header-bg);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0
 }
-#sidebar.open{transform:translateX(0)}
-.sidebar-header{display:flex;align-items:center;gap:12px;padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.04)}
-.sidebar-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text);letter-spacing:2px}
-.sidebar-logo span{color:var(--purple)}
-.sidebar-close{margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1;padding:4px;border-radius:6px;transition:color var(--transition)}
-.sidebar-close:hover{color:var(--text)}
-.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
-.nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;cursor:pointer;color:var(--text-muted);font-size:14px;font-weight:500;transition:all var(--transition);border-left:3px solid transparent;user-select:none}
-.nav-item:hover{color:var(--text);background:rgba(124,58,237,0.07)}
-.nav-item.active{color:var(--purple);border-left-color:var(--purple);background:rgba(124,58,237,0.1)}
-.nav-item .ni{font-size:18px;width:22px;text-align:center}
-.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.04);font-size:12px;color:var(--text-dim)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:3px;
+  background:linear-gradient(135deg,var(--purple),#f0a0ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex:1}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);
+  width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:20px;transition:all 0.18s}
+.icon-btn:hover{background:var(--purple-glow);color:var(--purple)}
+.material-symbols-outlined{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;
+  font-size:22px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;
+  white-space:nowrap;word-wrap:normal;direction:ltr}
 
-/* OVERLAY */
-#overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);opacity:0;pointer-events:none;transition:opacity var(--transition);z-index:190}
+#sidebar{position:fixed;top:0;left:0;height:100%;width:240px;background:var(--surface);
+  border-right:1px solid var(--border);transform:translateX(-100%);
+  transition:transform 0.22s cubic-bezier(.4,0,.2,1);z-index:300;display:flex;flex-direction:column}
+#sidebar.open{transform:translateX(0)}
+.sb-head{display:flex;align-items:center;gap:10px;padding:18px 16px 14px;border-bottom:1px solid var(--border-soft)}
+.sb-logo{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--purple),#f0a0ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sb-close{margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:20px;line-height:1}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:11px;padding:11px 16px;cursor:pointer;
+  color:var(--text-muted);font-size:14px;font-weight:500;transition:all 0.18s;
+  border-left:3px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:var(--purple-glow)}
+.nav-item.active{color:var(--purple);border-left-color:var(--purple);background:rgba(124,58,237,0.1)}
+.ni{font-size:17px;width:22px;text-align:center}
+.sb-footer{padding:14px 16px;border-top:1px solid var(--border-soft);font-size:12px;color:var(--text-dim)}
+.divider{height:1px;background:var(--border-soft);margin:6px 0}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);opacity:0;pointer-events:none;
+  transition:opacity 0.2s;z-index:290}
 #overlay.active{opacity:1;pointer-events:all}
 
-/* MAIN */
-#main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;min-width:0}
-
-/* TOPBAR */
-#topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--surface);border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;z-index:100}
-#menu-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:8px;transition:color var(--transition)}
-#menu-btn:hover{color:var(--purple)}
-#menu-btn span{display:block;width:20px;height:2px;background:currentColor;border-radius:2px;transition:all var(--transition)}
-.topbar-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--text)}
-.topbar-title span{color:var(--purple)}
-.topbar-section{margin-left:8px;font-size:13px;color:var(--text-dim);font-weight:500}
-
-/* CONTENT */
 #content{flex:1;overflow:hidden;position:relative}
-.page{position:absolute;inset:0;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity 0.18s ease}
+.page{position:absolute;inset:0;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity 0.18s}
 .page.active{opacity:1;pointer-events:all}
 @keyframes pageIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 .page.active{animation:pageIn 0.2s ease}
 
-/* FOOTER */
-#site-footer{flex-shrink:0;background:var(--surface);border-top:1px solid rgba(255,255,255,0.04);padding:10px 20px;display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap}
-.footer-credit{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-dim)}
-.footer-credit strong{color:var(--text-muted);font-weight:600}
-.footer-discord{display:inline-flex;align-items:center;gap:5px;color:var(--text-dim);text-decoration:none;font-size:12px;padding:3px 8px;border-radius:6px;background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.2);transition:all var(--transition)}
-.footer-discord:hover{color:#c7ceff;background:rgba(88,101,242,0.2);border-color:rgba(88,101,242,0.4)}
-.footer-discord svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
-.footer-sep{width:1px;height:14px;background:rgba(255,255,255,0.07)}
+#site-footer{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border-soft);
+  padding:10px 20px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+.fc{font-size:12px;color:var(--text-muted);font-weight:600}
+.fd{display:inline-flex;align-items:center;gap:5px;color:var(--text-dim);text-decoration:none;
+  font-size:12px;padding:3px 9px;border-radius:6px;
+  background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.2);transition:all 0.18s}
+.fd:hover{color:#c7ceff;background:rgba(88,101,242,0.22)}
+.fd svg{width:13px;height:13px;fill:currentColor;flex-shrink:0}
+.fsep{width:1px;height:14px;background:var(--border-soft)}
 
-/* ======================== HOME ======================== */
-#page-home{padding:20px 18px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
-.home-hero{text-align:center;flex-shrink:0}
-.home-hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,6vw,52px);letter-spacing:4px;line-height:1.1}
-.home-hero h1 span{color:var(--purple)}
-.home-hero p{color:var(--text-muted);font-size:13px;max-width:400px;margin:6px auto 0}
-.home-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;flex-shrink:0}
-@media(min-width:560px){.home-grid{grid-template-columns:repeat(4,1fr)}}
-.home-card{
-  background:var(--surface2);border:none;border-radius:14px;
-  aspect-ratio:1/1;padding:12px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-  cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden;
-  -webkit-tap-highlight-color:transparent
-}
-.home-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,var(--purple-glow),transparent 70%);opacity:0;transition:opacity var(--transition)}
-.home-card:hover,.home-card:active{background:var(--surface3)}
+#page-home{padding:24px 18px;display:flex;flex-direction:column;gap:18px}
+.home-hero{text-align:center}
+.home-hero h1{font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(38px,8vw,62px);letter-spacing:4px;line-height:1.05;
+  background:linear-gradient(135deg,var(--purple),#f0a0ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.home-hero p{font-size:14px;color:var(--text-muted);margin:6px auto 0;max-width:380px}
+.home-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:520px){.home-grid{grid-template-columns:repeat(4,1fr)}}
+.home-card{background:var(--card);border:none;border-radius:16px;aspect-ratio:1/1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.home-card::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,var(--purple-glow),transparent 70%);
+  opacity:0;transition:opacity 0.2s}
+.home-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(124,58,237,0.22)}
 .home-card:hover::before{opacity:1}
 .home-card:active{transform:scale(0.96)}
-.card-icon{font-size:34px;line-height:1;pointer-events:none}
-.card-label{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--text);pointer-events:none}
-.card-sub{font-size:11px;color:var(--text-dim);text-align:center;line-height:1.4;pointer-events:none}
-/* INFO STRIP */
-.home-info-strip{flex-shrink:0}
-.home-info-strip h3{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px}
-.info-rows{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-@media(min-width:560px){.info-rows{grid-template-columns:repeat(4,1fr)}}
-.iri{background:var(--surface2);border-radius:10px;padding:11px 12px;display:flex;gap:9px;align-items:flex-start}
-.iri-icon{font-size:17px;flex-shrink:0;margin-top:1px}
-.iri strong{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:1px}
-.iri span{font-size:11px;color:var(--text-dim);line-height:1.4}
+.ci{font-size:34px;pointer-events:none}
+.cl{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--text);pointer-events:none}
+.cs{font-size:11px;color:var(--text-dim);text-align:center;pointer-events:none}
+.home-strip{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+.strip-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--text-dim)}
+.strip-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1}
+@media(min-width:520px){.strip-grid{grid-template-columns:repeat(4,1fr)}}
+.iri{background:var(--surface2);border-radius:12px;padding:14px 14px;display:flex;
+  gap:10px;align-items:flex-start;flex:1}
+.iri-icon{font-size:22px;flex-shrink:0}
+.iri strong{display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+.iri span{font-size:12px;color:var(--text-muted);line-height:1.5}
 
-/* ======================== CATEGORY ======================== */
 .cat-page{display:flex;flex-direction:column;height:100%}
-.search-bar-wrap{padding:14px 18px 10px;flex-shrink:0;background:var(--bg);border-bottom:1px solid rgba(255,255,255,0.04)}
-.search-bar{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:0 14px;transition:border-color var(--transition)}
-.search-bar:focus-within{border-color:var(--purple-border)}
-.search-bar input{flex:1;background:none;border:none;color:var(--text);font-size:14px;padding:11px 0;font-family:'DM Sans',sans-serif}
-.search-bar input::placeholder{color:var(--text-dim)}
-.search-icon{color:var(--text-dim);font-size:15px}
+.sw{padding:14px 18px 10px;flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border-soft)}
+.sb{display:flex;align-items:center;gap:8px;background:var(--surface2);
+  border:1px solid var(--border-soft);border-radius:10px;padding:0 14px;transition:border-color 0.2s}
+.sb:focus-within{border-color:var(--border)}
+.sb input{flex:1;background:none;border:none;color:var(--text);font-size:14px;
+  padding:10px 0;font-family:'Roboto',sans-serif}
+.sb input::placeholder{color:var(--text-dim)}
+.si{color:var(--text-dim);font-size:16px}
 
-/* GAME CARDS - big visual style */
-.games-list{flex:1;overflow-y:auto;padding:14px 18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(min-width:600px){.games-list{grid-template-columns:repeat(3,1fr)}}
-@media(min-width:900px){.games-list{grid-template-columns:repeat(4,1fr)}}
-.game-card{
-  background:var(--surface2);border-radius:12px;overflow:hidden;
-  display:flex;flex-direction:column;transition:all var(--transition);cursor:default;
-  border:1px solid rgba(255,255,255,0.04)
-}
-.game-card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,0.35);border-color:var(--purple-border)}
-.game-thumb-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;background:var(--surface3);flex-shrink:0;position:relative}
-.game-thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.3s ease}
-.game-card:hover .game-thumb-wrap img{transform:scale(1.05)}
-.game-thumb-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px}
-.game-body{padding:10px 10px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
-.game-name{font-weight:600;font-size:13px;line-height:1.3;color:var(--text)}
-.game-desc{font-size:11px;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;flex:1}
-.game-footer{margin-top:auto;padding-top:6px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all var(--transition);font-family:'DM Sans',sans-serif;white-space:nowrap;-webkit-tap-highlight-color:transparent;text-decoration:none}
-.btn-primary{background:var(--purple);color:#fff}
+.games-list{flex:1;overflow-y:auto;padding:16px 18px 24px;display:flex;flex-direction:column;gap:16px}
+.game-card{background:var(--card);border-radius:16px;overflow:hidden;
+  border:1px solid var(--border-soft);transition:transform 0.25s,box-shadow 0.25s,border-color 0.25s;
+  animation:cardIn 0.3s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.game-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(0,0,0,0.4);border-color:var(--border)}
+.gc-img-wrap{width:100%;aspect-ratio:16/9;overflow:hidden;background:var(--surface3);position:relative}
+.gc-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.35s}
+.game-card:hover .gc-img-wrap img{transform:scale(1.04)}
+.gc-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:52px}
+.gc-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px}
+.gc-chip{display:inline-flex;background:rgba(168,85,247,0.15);color:var(--purple);
+  font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;width:fit-content;letter-spacing:0.5px}
+.gc-name{font-size:17px;font-weight:700;color:var(--text);line-height:1.3}
+.gc-desc{font-size:13px;color:var(--text-muted);line-height:1.6}
+.gc-links{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.gc-link{display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:11px 0;border-radius:12px;background:var(--purple-dim);color:#fff;
+  font-size:14px;font-weight:700;text-decoration:none;transition:background 0.18s,transform 0.15s}
+.gc-link:hover{background:var(--purple-mid)}
+.gc-link:active{transform:scale(0.98)}
+.gc-admin-btns{position:absolute;top:8px;left:8px;display:flex;gap:6px}
+.gc-abtn{background:rgba(0,0,0,0.65);border:none;cursor:pointer;color:#fff;
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:15px;transition:background 0.18s}
+.gc-abtn:hover{background:var(--purple)}
+.gc-abtn.del:hover{background:#ef4444}
+.gc-pin{position:absolute;top:8px;right:8px;background:var(--purple);color:#fff;
+  border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.empty-state{text-align:center;padding:60px 24px;color:var(--text-dim)}
+.empty-state .ei{font-size:48px;margin-bottom:14px}
+.empty-state p{font-size:15px}
+.sk-card{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--border-soft)}
+.sk{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);
+  background-size:800px 100%;animation:shimmer 1.4s infinite linear}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.sk-banner{width:100%;aspect-ratio:16/9}
+.sk-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.sk-chip{width:60px;height:18px;border-radius:999px}
+.sk-title{width:65%;height:22px;border-radius:6px}
+.sk-txt{width:100%;height:14px;border-radius:5px}
+.sk-txt2{width:70%;height:14px;border-radius:5px}
+.sk-btn{width:100%;height:42px;border-radius:12px}
+.lmw{padding:12px 18px 4px;text-align:center;flex-shrink:0}
+.lmbtn{background:var(--surface2);border:1px solid var(--border);color:var(--purple);
+  font-size:13px;font-weight:600;padding:10px 28px;border-radius:10px;cursor:pointer;
+  transition:all 0.18s;font-family:'Roboto',sans-serif;display:none}
+.lmbtn:hover{background:var(--purple-glow)}
+
+#page-info{padding:24px 20px 48px}
+.info-sec{margin-bottom:24px}
+.info-sec h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--purple);margin-bottom:10px}
+.info-sec p,.info-sec li{font-size:14px;color:var(--text-muted);line-height:1.7}
+.info-sec ul{padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.doc-block{margin-top:28px;background:var(--surface2);border-radius:14px;padding:20px}
+.doc-block h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:var(--text);margin-bottom:8px}
+.doc-block p{font-size:13px;color:var(--text-muted);margin-bottom:12px}
+.doc-row{display:flex;align-items:center;gap:8px;background:var(--surface3);
+  border:1px solid var(--border-soft);border-radius:10px;padding:0 14px;
+  transition:border-color 0.2s;max-width:440px}
+.doc-row:focus-within{border-color:var(--border)}
+.doc-row input{flex:1;background:none;border:none;color:var(--text);font-size:14px;
+  padding:11px 0;font-family:'Roboto',sans-serif}
+.doc-row input::placeholder{color:var(--text-dim)}
+.doc-sbtn{background:none;border:none;cursor:pointer;color:var(--purple);
+  font-size:13px;font-weight:700;padding:0 2px;font-family:'Roboto',sans-serif}
+.doc-err{font-size:12px;color:var(--text-dim);margin-top:8px;display:none}
+
+#page-admin{padding:20px 20px 40px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.admin-head{display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.admin-head h1{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px}
+.admin-badge{background:var(--purple);color:#fff;font-size:10px;font-weight:700;
+  padding:3px 8px;border-radius:4px;letter-spacing:1px}
+.admin-tabs{display:flex;border-bottom:1px solid var(--border-soft);flex-shrink:0}
+.atab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all 0.18s;user-select:none}
+.atab.active{color:var(--purple);border-bottom-color:var(--purple)}
+.atab:hover:not(.active){color:var(--text-muted)}
+.apanel{display:none}
+.apanel.active{display:flex;flex-direction:column;gap:10px;padding-top:14px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:0.5px}
+.fi{width:100%;background:var(--surface3);border:1px solid var(--border-soft);border-radius:8px;
+  padding:10px 14px;color:var(--text);font-size:14px;font-family:'Roboto',sans-serif;transition:border-color 0.2s}
+.fi:focus{border-color:var(--border)}
+.fi::placeholder{color:var(--text-dim)}
+textarea.fi{resize:vertical;min-height:56px}
+select.fi{cursor:pointer;appearance:none}
+select.fi option{background:var(--surface3)}
+.fe{font-size:12px;color:var(--danger);margin-top:2px;display:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;
+  border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;
+  transition:all 0.18s;font-family:'Roboto',sans-serif}
+.btn-primary{background:var(--purple-dim);color:#fff}
 .btn-primary:hover{background:var(--purple-mid);box-shadow:0 4px 16px rgba(124,58,237,0.4)}
-.btn-primary:active{transform:scale(0.97)}
-.btn-ghost{background:rgba(255,255,255,0.06);color:var(--text-muted);border:1px solid rgba(255,255,255,0.08)}
-.btn-ghost:hover{background:rgba(255,255,255,0.1);color:var(--text)}
-.btn-danger{background:rgba(239,68,68,0.15);color:var(--danger);border:1px solid rgba(239,68,68,0.25)}
-.btn-danger:hover{background:rgba(239,68,68,0.25)}
+.btn-ghost{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border-soft)}
+.btn-ghost:hover{background:var(--surface3);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,0.12);color:var(--danger);border:1px solid rgba(239,68,68,0.22)}
+.btn-danger:hover{background:rgba(239,68,68,0.22)}
 .btn-sm{padding:5px 10px;font-size:12px}
-.btn-full{width:100%}
-.empty-state{grid-column:1/-1;text-align:center;padding:48px 24px;color:var(--text-dim)}
-.empty-state .es-icon{font-size:40px;margin-bottom:12px}
-.empty-state p{font-size:14px}
-
-/* ======================== INFO ======================== */
-#page-info{padding:24px 20px 40px}
-.info-section{margin-bottom:26px}
-.info-section h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--purple);margin-bottom:10px}
-.info-section p,.info-section li{font-size:14px;color:var(--text-muted);line-height:1.7}
-.info-section ul{padding-left:18px;display:flex;flex-direction:column;gap:4px}
-.info-search-block{margin-top:32px;padding:20px;background:var(--surface2);border-radius:var(--radius)}
-.info-search-block h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:var(--text);margin-bottom:10px}
-
-/* ======================== ADMIN ======================== */
-#page-admin{padding:20px 20px 40px;display:flex;flex-direction:column;gap:20px}
-.admin-header{display:flex;align-items:center;gap:12px;flex-shrink:0}
-.admin-header h1{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px}
-.admin-badge{background:var(--purple);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:1px}
-.admin-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,0.07)}
-.admin-tab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all var(--transition);user-select:none}
-.admin-tab.active{color:var(--purple);border-bottom-color:var(--purple)}
-.admin-tab:hover:not(.active){color:var(--text-muted)}
-.admin-panel{display:none}
-.admin-panel.active{display:block;padding-top:16px}
-.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
-.form-group label{font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:0.5px}
-.form-row-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:480px){.form-row-two{grid-template-columns:1fr}}
-.input-field{width:100%;background:var(--surface3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;transition:border-color var(--transition);margin-bottom:0}
-.input-field:focus{border-color:var(--purple-border)}
-.input-field::placeholder{color:var(--text-dim)}
-.select-field{width:100%;background:var(--surface3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;appearance:none}
-.select-field:focus{border-color:var(--purple-border)}
-.select-field option{background:var(--surface3)}
-.field-error{font-size:12px;color:var(--danger);margin-top:3px}
-.manage-filter{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.filter-btn{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:var(--surface2);border:1px solid rgba(255,255,255,0.07);color:var(--text-muted);transition:all var(--transition);-webkit-tap-highlight-color:transparent}
-.filter-btn.active{background:var(--purple);color:#fff;border-color:var(--purple)}
-.manage-list{display:flex;flex-direction:column;gap:8px}
-.manage-card{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.05);border-radius:var(--radius);padding:12px}
+.btn:active{transform:scale(0.97)}
+.mf{display:flex;gap:8px;flex-wrap:wrap}
+.mfb{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
+  background:var(--surface2);border:1px solid var(--border-soft);color:var(--text-muted);transition:all 0.18s}
+.mfb.active{background:var(--purple-dim);color:#fff;border-color:var(--purple-dim)}
+.ml{display:flex;flex-direction:column;gap:8px}
+.mc{display:flex;align-items:center;gap:10px;background:var(--surface2);
+  border:1px solid var(--border-soft);border-radius:12px;padding:12px}
 .mc-info{flex:1;min-width:0}
 .mc-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mc-meta{font-size:12px;color:var(--text-dim);margin-top:2px}
-.mc-actions{display:flex;gap:6px;flex-shrink:0}
-.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.5px}
-.tag-mobile{background:rgba(59,130,246,0.15);color:#93c5fd}
-.tag-pc{background:rgba(34,197,94,0.15);color:#86efac}
-.tag-emulador{background:rgba(251,146,60,0.15);color:#fdba74}
-.tag-apps{background:rgba(124,58,237,0.15);color:#c4b5fd}
-.divider{height:1px;background:rgba(255,255,255,0.05);margin:10px 0}
+.mc-meta{font-size:11px;color:var(--text-dim);margin-top:2px}
+.mc-acts{display:flex;gap:6px;flex-shrink:0}
+.chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.chip-mobile{background:rgba(59,130,246,0.15);color:#93c5fd}
+.chip-pc{background:rgba(34,197,94,0.15);color:#86efac}
+.chip-emulador{background:rgba(251,146,60,0.15);color:#fdba74}
+.chip-apps{background:rgba(168,85,247,0.15);color:#c4b5fd}
+.link-row{background:var(--surface2);border:1px solid var(--border-soft);border-radius:10px;
+  padding:10px;display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.link-inner{display:flex;gap:8px;align-items:flex-end}
 
-/* MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity 0.18s ease}
-.modal-bg.open{opacity:1;pointer-events:all}
-.modal{background:var(--surface);border:1px solid var(--purple-border);border-radius:var(--radius);padding:24px;width:90%;max-width:460px;max-height:90vh;overflow-y:auto;transform:scale(0.96);transition:transform 0.18s ease}
-.modal-bg.open .modal{transform:scale(1)}
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;z-index:500;
+  opacity:0;pointer-events:none;transition:opacity 0.2s}
+.mbg.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:24px;width:90%;max-width:460px;max-height:90vh;overflow-y:auto;
+  transform:scale(0.9) translateY(10px);transition:transform 0.25s cubic-bezier(.34,1.56,.64,1)}
+.mbg.open .modal{transform:scale(1) translateY(0)}
 .modal h3{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:16px}
 
-/* TOAST */
 #toast{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast-item{background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;min-width:200px;animation:toastIn 0.22s ease forwards;box-shadow:0 4px 24px rgba(0,0,0,0.4)}
-.toast-item.out{animation:toastOut 0.2s ease forwards}
-.toast-item.success{border-color:rgba(34,197,94,0.3);color:#bbf7d0}
-.toast-item.error{border-color:rgba(239,68,68,0.3);color:#fca5a5}
-@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(8px)}}
-
-/* LOADING */
-.loading-state{grid-column:1/-1;text-align:center;padding:40px 24px;color:var(--text-dim);font-size:14px}
-.spinner{width:28px;height:28px;border:2px solid rgba(124,58,237,0.2);border-top-color:var(--purple);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
-@keyframes spin{to{transform:rotate(360deg)}}
+.ti{background:var(--surface2);border:1px solid var(--border-soft);border-radius:10px;
+  padding:12px 18px;font-size:13px;font-weight:500;min-width:200px;
+  animation:tIn 0.22s ease;box-shadow:0 4px 24px rgba(0,0,0,0.45)}
+.ti.out{animation:tOut 0.2s ease forwards}
+.ti.success{border-color:rgba(74,222,128,0.3);color:#bbf7d0}
+.ti.error{border-color:rgba(239,68,68,0.3);color:#fca5a5}
+@keyframes tIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tOut{from{opacity:1}to{opacity:0;transform:translateY(6px)}}
 </style>
 </head>
 <body>
+<canvas id="stars-canvas"></canvas>
 <div id="app">
-
-  <!-- SIDEBAR -->
   <nav id="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo">NEW<span>G</span></div>
-      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    <div class="sb-head">
+      <div class="sb-logo">NEW GAMES</div>
+      <button class="sb-close" onclick="closeSidebar()">✕</button>
     </div>
-    <div class="sidebar-nav">
+    <div class="sb-nav">
       <div class="nav-item active" data-page="home" onclick="navigate('home')"><span class="ni">🏠</span> Início</div>
       <div class="nav-item" data-page="mobile" onclick="navigate('mobile')"><span class="ni">📱</span> Mobile</div>
       <div class="nav-item" data-page="pc" onclick="navigate('pc')"><span class="ni">🖥️</span> PC</div>
@@ -241,532 +295,25 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <div class="divider"></div>
       <div class="nav-item" data-page="info" onclick="navigate('info')"><span class="ni">ℹ️</span> Informações</div>
     </div>
-    <div class="sidebar-footer">New Games © 2025</div>
+    <div class="sb-footer">New Games © 2025</div>
   </nav>
   <div id="overlay" onclick="closeSidebar()"></div>
 
-  <!-- MAIN -->
-  <main id="main">
-    <header id="topbar">
-      <button id="menu-btn" onclick="openSidebar()">
-        <span></span><span></span><span></span>
-      </button>
-      <div class="topbar-title">NEW<span>GAMES</span></div>
-      <div class="topbar-section" id="topbar-section"></div>
-    </header>
+  <header>
+    <button class="icon-btn" onclick="openSidebar()">☰</button>
+    <div class="logo">NEW GAMES</div>
+    <button class="icon-btn" onclick="cycleTheme()" id="theme-btn">
+      <span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+    </button>
+  </header>
 
-    <div id="content">
-
-      <!-- HOME -->
-      <section class="page active" id="page-home">
-        <div class="home-hero">
-          <h1>NEW <span>GAMES</span></h1>
-          <p>Sua plataforma completa de jogos e aplicativos.</p>
-        </div>
-        <div class="home-grid">
-          <div class="home-card" onclick="navigate('mobile')">
-            <div class="card-icon">📱</div>
-            <div class="card-label">Mobile</div>
-            <div class="card-sub">Jogos para celular</div>
-          </div>
-          <div class="home-card" onclick="navigate('pc')">
-            <div class="card-icon">🖥️</div>
-            <div class="card-label">PC</div>
-            <div class="card-sub">Jogos para computador</div>
-          </div>
-          <div class="home-card" onclick="navigate('emulador')">
-            <div class="card-icon">🕹️</div>
-            <div class="card-label">Emulador</div>
-            <div class="card-sub">Clássicos emulados</div>
-          </div>
-          <div class="home-card" onclick="navigate('apps')">
-            <div class="card-icon">📦</div>
-            <div class="card-label">Apps</div>
-            <div class="card-sub">Aplicativos premium</div>
-          </div>
-        </div>
-        <div class="home-info-strip">
-          <h3>Como funciona</h3>
-          <div class="info-rows">
-            <div class="iri"><div class="iri-icon">📱</div><div><strong>Mobile</strong><span>Jogos para celular, direto no navegador ou via download</span></div></div>
-            <div class="iri"><div class="iri-icon">🖥️</div><div><strong>PC</strong><span>Jogos e ferramentas para computador Windows/Mac</span></div></div>
-            <div class="iri"><div class="iri-icon">🕹️</div><div><strong>Emulador</strong><span>Clássicos de consoles rodando no browser</span></div></div>
-            <div class="iri"><div class="iri-icon">📦</div><div><strong>Apps</strong><span>Aplicativos premium desbloqueados prontos pra usar</span></div></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- MOBILE -->
-      <section class="page" id="page-mobile">
-        <div class="cat-page">
-          <div class="search-bar-wrap">
-            <div class="search-bar">
-              <span class="search-icon">🔍</span>
-              <input type="text" id="search-mobile" placeholder="Pesquisar jogos mobile..." oninput="renderCategory('mobile')"/>
-            </div>
-          </div>
-          <div class="games-list" id="list-mobile"></div>
-        </div>
-      </section>
-
-      <!-- PC -->
-      <section class="page" id="page-pc">
-        <div class="cat-page">
-          <div class="search-bar-wrap">
-            <div class="search-bar">
-              <span class="search-icon">🔍</span>
-              <input type="text" id="search-pc" placeholder="Pesquisar jogos PC..." oninput="renderCategory('pc')"/>
-            </div>
-          </div>
-          <div class="games-list" id="list-pc"></div>
-        </div>
-      </section>
-
-      <!-- EMULADOR -->
-      <section class="page" id="page-emulador">
-        <div class="cat-page">
-          <div class="search-bar-wrap">
-            <div class="search-bar">
-              <span class="search-icon">🔍</span>
-              <input type="text" id="search-emulador" placeholder="Pesquisar emuladores..." oninput="renderCategory('emulador')"/>
-            </div>
-          </div>
-          <div class="games-list" id="list-emulador"></div>
-        </div>
-      </section>
-
-      <!-- APPS -->
-      <section class="page" id="page-apps">
-        <div class="cat-page">
-          <div class="search-bar-wrap">
-            <div class="search-bar">
-              <span class="search-icon">🔍</span>
-              <input type="text" id="search-apps" placeholder="Pesquisar aplicativos..." oninput="renderCategory('apps')"/>
-            </div>
-          </div>
-          <div class="games-list" id="list-apps"></div>
-        </div>
-      </section>
-
-      <!-- INFO -->
-      <section class="page" id="page-info">
-        <div class="info-section">
-          <h2>Sobre o New Games</h2>
-          <p>O New Games é uma plataforma organizada para acesso rápido a jogos e aplicativos nas categorias Mobile, PC, Emulador e Apps. Todo o conteúdo é gerenciado internamente pelo administrador.</p>
-        </div>
-        <div class="info-section">
-          <h2>Avisos Importantes</h2>
-          <ul>
-            <li>Este site é de uso pessoal e não comercial.</li>
-            <li>Todo o conteúdo listado é de responsabilidade do administrador.</li>
-            <li>Links externos são de terceiros; acesse com cautela.</li>
-          </ul>
-        </div>
-        <div class="info-section">
-          <h2>Atualizações Futuras</h2>
-          <ul>
-            <li>Sistema de favoritos por usuário</li>
-            <li>Avaliações e comentários</li>
-            <li>Filtros avançados por gênero</li>
-          </ul>
-        </div>
-        <div class="info-section">
-          <h2>Regras de Uso</h2>
-          <ul>
-            <li>Não compartilhe senhas ou dados administrativos.</li>
-            <li>Use o site apenas para fins lícitos.</li>
-          </ul>
-        </div>
-        <div class="info-section">
-          <h2>Créditos</h2>
-          <p>Desenvolvido com HTML, CSS e JavaScript puro. By Kali Kyle &amp; Zyx.</p>
-        </div>
-        <div class="info-search-block">
-          <h3>🔍 Documentação</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Pesquise informações sobre versões e atualizações do site.</p>
-          <div class="search-bar" style="max-width:400px">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="admin-pass" placeholder="Pesquisar documentação..." style="flex:1;background:none;border:none;color:var(--text);font-size:14px;padding:11px 0;font-family:'DM Sans',sans-serif" onkeydown="if(event.key==='Enter')tryAdminLogin()"/>
-            <button onclick="tryAdminLogin()" style="background:none;border:none;cursor:pointer;color:var(--purple);font-size:13px;font-weight:600;padding:0 4px;font-family:'DM Sans',sans-serif">Buscar</button>
-          </div>
-          <div class="field-error" id="admin-err" style="margin-top:10px;display:none"></div>
-        </div>
-      </section>
-
-      <!-- ADMIN -->
-      <section class="page" id="page-admin">
-        <div class="admin-header">
-          <button class="btn btn-ghost btn-sm" onclick="navigate('info')">← Voltar</button>
-          <h1>Painel Admin</h1>
-          <span class="admin-badge">ADMIN</span>
-        </div>
-        <div class="admin-tabs">
-          <div class="admin-tab active" onclick="switchAdminTab('publish')">Publicar</div>
-          <div class="admin-tab" onclick="switchAdminTab('manage')">Gerenciar</div>
-        </div>
-
-        <div class="admin-panel active" id="admin-publish">
-          <div class="form-group">
-            <label>CATEGORIA *</label>
-            <select class="select-field" id="pub-cat">
-              <option value="">Selecione...</option>
-              <option value="mobile">📱 Mobile</option>
-              <option value="pc">🖥️ PC</option>
-              <option value="emulador">🕹️ Emulador</option>
-              <option value="apps">📦 Apps</option>
-            </select>
-            <div class="field-error" id="err-cat" style="display:none">Categoria obrigatória</div>
-          </div>
-          <div class="form-group">
-            <label>NOME *</label>
-            <input class="input-field" type="text" id="pub-name" placeholder="Nome do jogo ou app"/>
-            <div class="field-error" id="err-name" style="display:none">Nome obrigatório</div>
-          </div>
-          <div class="form-group">
-            <label>DESCRIÇÃO (opcional)</label>
-            <textarea class="input-field" id="pub-desc" rows="2" placeholder="Descrição breve..." style="resize:vertical"></textarea>
-          </div>
-          <div class="form-row-two">
-            <div class="form-group">
-              <label>URL DO JOGO/APP *</label>
-              <input class="input-field" type="url" id="pub-url" placeholder="https://..."/>
-              <div class="field-error" id="err-url" style="display:none">URL inválida ou obrigatória</div>
-            </div>
-            <div class="form-group">
-              <label>URL DA THUMBNAIL *</label>
-              <input class="input-field" type="url" id="pub-thumb" placeholder="https://..."/>
-              <div class="field-error" id="err-thumb" style="display:none">Thumbnail obrigatória</div>
-            </div>
-          </div>
-          <button class="btn btn-primary" onclick="publishItem()">Publicar</button>
-        </div>
-
-        <div class="admin-panel" id="admin-manage">
-          <div class="manage-filter">
-            <div class="filter-btn active" onclick="setManageFilter('all',this)">Todos</div>
-            <div class="filter-btn" onclick="setManageFilter('mobile',this)">Mobile</div>
-            <div class="filter-btn" onclick="setManageFilter('pc',this)">PC</div>
-            <div class="filter-btn" onclick="setManageFilter('emulador',this)">Emulador</div>
-            <div class="filter-btn" onclick="setManageFilter('apps',this)">Apps</div>
-          </div>
-          <div class="manage-list" id="manage-list"></div>
-        </div>
-      </section>
-
-    </div><!-- /content -->
-
-    <footer id="site-footer">
-      <div class="footer-credit"><strong>By Kali Kyle</strong></div>
-      <a class="footer-discord" href="https://discord.gg/uDVJkezjvp" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.003.022.015.043.03.056a19.9 19.9 0 0 0 5.993 3.03.077.077 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-        Discord
-      </a>
-      <div class="footer-sep"></div>
-      <div class="footer-credit"><strong>By Zyx</strong></div>
-      <a class="footer-discord" href="https://discord.gg/tjaznMdqb7" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.003.022.015.043.03.056a19.9 19.9 0 0 0 5.993 3.03.077.077 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-        Discord
-      </a>
-    </footer>
-  </main>
-</div>
-
-<!-- EDIT MODAL -->
-<div class="modal-bg" id="edit-modal">
-  <div class="modal">
-    <h3>✏️ Editar Item</h3>
-    <input type="hidden" id="edit-id"/>
-    <div class="form-group">
-      <label>CATEGORIA *</label>
-      <select class="select-field" id="edit-cat">
-        <option value="mobile">📱 Mobile</option>
-        <option value="pc">🖥️ PC</option>
-        <option value="emulador">🕹️ Emulador</option>
-        <option value="apps">📦 Apps</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>NOME *</label>
-      <input class="input-field" type="text" id="edit-name"/>
-    </div>
-    <div class="form-group">
-      <label>DESCRIÇÃO</label>
-      <textarea class="input-field" id="edit-desc" rows="2" style="resize:vertical"></textarea>
-    </div>
-    <div class="form-group">
-      <label>URL DO JOGO/APP *</label>
-      <input class="input-field" type="url" id="edit-url"/>
-    </div>
-    <div class="form-group">
-      <label>URL DA THUMBNAIL *</label>
-      <input class="input-field" type="url" id="edit-thumb"/>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn btn-primary" onclick="saveEdit()">Salvar</button>
-      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script>
-/* ============================================================
-   STORAGE — Shared via Claude Artifacts persistent storage API
-   ============================================================ */
-const STORAGE_KEY = 'ng_games_v2';
-
-function loadItems() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const items = JSON.parse(raw);
-    return Array.isArray(items) ? items.filter(i => i && i.id && i.name) : [];
-  } catch (e) { return []; }
-}
-
-function saveItems(items) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch (e) {
-    showToast('Erro ao salvar dados', 'error');
-  }
-}
-
-/* ============================================================
-   SANITIZE & VALIDATE
-   ============================================================ */
-function sanitize(str) {
-  if (typeof str !== 'string') return '';
-  return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').trim();
-}
-
-function isValidURL(s) {
-  try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch (e) { return false; }
-}
-
-/* ============================================================
-   STATE
-   ============================================================ */
-let items = [];
-let manageFilter = 'all';
-let currentPage = 'home';
-const catIcons = { mobile: '📱', pc: '🖥️', emulador: '🕹️', apps: '📦' };
-const sectionLabels = { home: 'Início', mobile: 'Mobile', pc: 'PC', emulador: 'Emulador', apps: 'Apps', info: 'Informações', admin: 'Painel Admin' };
-
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
-function navigate(page) {
-  document.querySelector('.page.active')?.classList.remove('active');
-  document.getElementById('page-' + page)?.classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
-  document.getElementById('topbar-section').textContent = sectionLabels[page] || '';
-  currentPage = page;
-  closeSidebar();
-  if (['mobile', 'pc', 'emulador', 'apps'].includes(page)) {
-    const inp = document.getElementById('search-' + page);
-    if (inp) inp.value = '';
-    renderCategory(page);
-  }
-  if (page === 'admin') renderManage();
-}
-
-function openSidebar() {
-  document.getElementById('sidebar').classList.add('open');
-  document.getElementById('overlay').classList.add('active');
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('active');
-}
-
-/* ============================================================
-   RENDER CATEGORY
-   ============================================================ */
-function renderCategory(cat) {
-  const query = (document.getElementById('search-' + cat)?.value || '').toLowerCase().trim();
-  const list = document.getElementById('list-' + cat);
-  const catItems = items.filter(i => i.category === cat);
-  const filtered = query ? catItems.filter(i => i.name.toLowerCase().includes(query) || (i.desc || '').toLowerCase().includes(query)) : catItems;
-
-  if (!filtered.length) {
-    list.innerHTML = `<div class="empty-state"><div class="es-icon">${catIcons[cat]}</div><p>${query ? 'Nenhum resultado para "' + sanitize(query) + '"' : 'Nenhum item cadastrado nesta categoria.'}</p></div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(item => {
-    const thumbHTML = item.thumb
-      ? `<img src="${sanitize(item.thumb)}" alt="${sanitize(item.name)}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.innerHTML='<div class=game-thumb-placeholder>${catIcons[item.category]}</div>'">`
-      : `<div class="game-thumb-placeholder">${catIcons[item.category]}</div>`;
-    return `<div class="game-card">
-      <div class="game-thumb-wrap">${thumbHTML}</div>
-      <div class="game-body">
-        <div class="game-name">${sanitize(item.name)}</div>
-        ${item.desc ? `<div class="game-desc">${sanitize(item.desc)}</div>` : ''}
-        <div class="game-footer">
-          <a href="${sanitize(item.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-full" style="font-size:12px;padding:7px 12px">▶ Acessar</a>
-        </div>
+  <div id="content">
+    <section class="page active" id="page-home">
+      <div class="home-hero">
+        <h1>NEW GAMES</h1>
+        <p>Sua plataforma completa de jogos e aplicativos.</p>
       </div>
-    </div>`;
-  }).join('');
-}
-
-/* ============================================================
-   ADMIN LOGIN (senha codificada em char codes)
-   ============================================================ */
-function tryAdminLogin() {
-  const v = document.getElementById('admin-pass').value.trim();
-  const e = document.getElementById('admin-err');
-  const _k = [99,97,121,97,110,119,97,108,108,97,99,101,64,103,109,97,105,108,46,99,111,109].map(c => String.fromCharCode(c)).join('');
-  if (v === _k) {
-    e.style.display = 'none';
-    document.getElementById('admin-pass').value = '';
-    navigate('admin');
-  } else {
-    e.textContent = 'Nenhum resultado encontrado para "' + sanitize(v).slice(0, 40) + '"';
-    e.style.display = 'block';
-  }
-}
-
-/* ============================================================
-   ADMIN TABS
-   ============================================================ */
-function switchAdminTab(tab) {
-  document.querySelectorAll('.admin-tab').forEach((el, i) => el.classList.toggle('active', ['publish', 'manage'][i] === tab));
-  document.querySelectorAll('.admin-panel').forEach(el => el.classList.remove('active'));
-  document.getElementById('admin-' + tab).classList.add('active');
-  if (tab === 'manage') renderManage();
-}
-
-/* ============================================================
-   PUBLISH
-   ============================================================ */
-function publishItem() {
-  const cat = document.getElementById('pub-cat').value;
-  const name = document.getElementById('pub-name').value.trim();
-  const desc = document.getElementById('pub-desc').value.trim();
-  const url = document.getElementById('pub-url').value.trim();
-  const thumb = document.getElementById('pub-thumb').value.trim();
-  const show = (id, v) => document.getElementById(id).style.display = v ? 'block' : 'none';
-
-  let valid = true;
-  if (!cat) { show('err-cat', true); valid = false; } else show('err-cat', false);
-  if (!name) { show('err-name', true); valid = false; } else show('err-name', false);
-  if (!url || !isValidURL(url)) { show('err-url', true); valid = false; } else show('err-url', false);
-  if (!thumb || !isValidURL(thumb)) { show('err-thumb', true); valid = false; } else show('err-thumb', false);
-  if (!valid) return;
-
-  const newItem = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    category: cat, name: name.slice(0, 120), desc: desc.slice(0, 300),
-    url, thumb, createdAt: Date.now()
-  };
-  items.unshift(newItem);
-  saveItems(items);
-  showToast('✅ Publicado com sucesso!', 'success');
-  ['pub-cat','pub-name','pub-desc','pub-url','pub-thumb'].forEach(id => document.getElementById(id).value = '');
-}
-
-/* ============================================================
-   MANAGE
-   ============================================================ */
-function setManageFilter(f, el) {
-  manageFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  renderManage();
-}
-
-function renderManage() {
-  const list = document.getElementById('manage-list');
-  const filtered = manageFilter === 'all' ? items : items.filter(i => i.category === manageFilter);
-  if (!filtered.length) {
-    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:14px">📭 Nenhum item encontrado.</div>';
-    return;
-  }
-  list.innerHTML = filtered.map(item => `
-    <div class="manage-card">
-      <div class="mc-info">
-        <div class="mc-name">${sanitize(item.name)}</div>
-        <div class="mc-meta"><span class="tag tag-${item.category}">${item.category.toUpperCase()}</span></div>
-      </div>
-      <div class="mc-actions">
-        <button class="btn btn-ghost btn-sm" onclick="openEdit('${item.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">🗑️</button>
-      </div>
-    </div>`).join('');
-}
-
-function deleteItem(id) {
-  if (!confirm('Excluir este item permanentemente?')) return;
-  items = items.filter(i => i.id !== id);
-  saveItems(items);
-  renderManage();
-  showToast('🗑️ Item removido', 'success');
-}
-
-/* ============================================================
-   EDIT MODAL
-   ============================================================ */
-function openEdit(id) {
-  const item = items.find(i => i.id === id);
-  if (!item) return;
-  document.getElementById('edit-id').value = id;
-  document.getElementById('edit-cat').value = item.category;
-  document.getElementById('edit-name').value = item.name;
-  document.getElementById('edit-desc').value = item.desc || '';
-  document.getElementById('edit-url').value = item.url;
-  document.getElementById('edit-thumb').value = item.thumb;
-  document.getElementById('edit-modal').classList.add('open');
-}
-function closeModal() { document.getElementById('edit-modal').classList.remove('open'); }
-
-function saveEdit() {
-  const id = document.getElementById('edit-id').value;
-  const cat = document.getElementById('edit-cat').value;
-  const name = document.getElementById('edit-name').value.trim();
-  const desc = document.getElementById('edit-desc').value.trim();
-  const url = document.getElementById('edit-url').value.trim();
-  const thumb = document.getElementById('edit-thumb').value.trim();
-  if (!name || !url || !isValidURL(url) || !thumb || !isValidURL(thumb)) {
-    showToast('Preencha todos os campos corretamente', 'error'); return;
-  }
-  const idx = items.findIndex(i => i.id === id);
-  if (idx < 0) return;
-  items[idx] = { ...items[idx], category: cat, name: name.slice(0, 120), desc: desc.slice(0, 300), url, thumb };
-  saveItems(items);
-  closeModal();
-  renderManage();
-  showToast('✅ Item atualizado!', 'success');
-}
-
-/* ============================================================
-   TOAST
-   ============================================================ */
-function showToast(msg, type = 'success') {
-  const c = document.getElementById('toast');
-  const el = document.createElement('div');
-  el.className = `toast-item ${type}`;
-  el.textContent = msg;
-  c.appendChild(el);
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2800);
-}
-
-/* ============================================================
-   EVENTS
-   ============================================================ */
-document.getElementById('edit-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSidebar(); closeModal(); } });
-
-/* ============================================================
-   INIT — load shared data then render
-   ============================================================ */
-function init() {
-  navigate('home');
-  items = loadItems();
-}
-init();
-</script>
-</body>
-</html>
+      <div class="home-grid">
+        <div class="home-card" onclick="navigate('mobile')">
+          <div class="ci">📱</div><div class="cl">Mobile</div><div class="cs">Jogos para celular</div>
+    
